@@ -3,3 +3,13 @@ __pycache__/
 .env
 *.pyc
 .ollama/
+# Internal audit / planning docs
+AUDIT_INDEX.md
+EXECUTIVE_SUMMARY.md
+FAILURE_SCENARIOS.md
+IMPLEMENTATION_DEEP_DIVE.md
+IMPROVEMENT_PLAN.md
+QUICK_REFERENCE.md
+README_AUDIT.md
+START_HERE.md
+TECHNICAL_AUDIT.md
