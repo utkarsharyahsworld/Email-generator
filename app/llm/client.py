@@ -1,32 +1,20 @@
-import requests
+import os
+from groq import Groq
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-MODEL_NAME = "mistral"
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def call_llm(prompt: str) -> str:
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "stream": False,
-        "options": {
-            "num_predict": 120,
-            "temperature": 0.2
-        }
-    }
+    if not client.api_key:
+        raise RuntimeError("GROQ_API_KEY not set")
 
-    response = requests.post(
-        OLLAMA_URL,
-        json=payload,
-        timeout=120
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.2,
+        max_tokens=300,
     )
 
-    response.raise_for_status()
+    return response.choices[0].message.content
 
-    data = response.json()
-
-    return data["message"]["content"]
