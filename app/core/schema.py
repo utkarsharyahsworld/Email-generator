@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class EmailRequest(BaseModel):
@@ -14,3 +15,7 @@ class EmailResponse(BaseModel):
     greeting: str
     body: str
     closing: str
+
+
+class ErrorResponse(BaseModel):
+    error: dict
