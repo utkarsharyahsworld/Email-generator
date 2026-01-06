@@ -13,8 +13,10 @@ def call_llm(prompt: str) -> str:
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
-        max_tokens=300,
+        max_tokens=400,
+        timeout=10.0,
+        # CRITICAL FIX: This forces the model to output valid JSON every time
+        response_format={"type": "json_object"} 
     )
 
     return response.choices[0].message.content
-

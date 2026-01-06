@@ -1,0 +1,7 @@
+INTENTS = [
+    "HR_EMAIL",
+    "MANAGER_EMAIL",
+    "CLIENT_EMAIL",
+    "COLLEGE_EMAIL",
+    "GENERAL_EMAIL",
+]

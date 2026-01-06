@@ -1,4 +1,6 @@
 from app.llm.client import call_llm
+from app.ml.intent_predictor import predict_intent
+
 import json
 
 CLASSIFIER_PROMPT = """
@@ -14,6 +16,7 @@ Extract and return ONLY valid JSON with fields:
 User description:
 "{description}"
 """
+INTENT_CONFIDENCE_THRESHOLD = 0.6
 
 def classify_email_intent(description: str) -> dict:
     raw = call_llm(CLASSIFIER_PROMPT.format(description=description))
@@ -31,38 +34,35 @@ def classify_email_intent(description: str) -> dict:
         }
 
 def infer_controls(description: str) -> dict:
-    d = description.lower()
-
-    sender = "user"
-    recipient = "recipient"
-    intent = "general"
-    confidence = "low"
-
-    if any(k in d for k in ["student", "exam", "fee", "college"]):
-        sender = "student"
-        recipient = "academic office"
-        intent = "fee_related"
-        confidence = "high"
-
-    elif any(k in d for k in ["leave", "sick", "manager"]):
-        sender = "employee"
-        recipient = "manager"
-        intent = "leave_request"
-        confidence = "high"
-
-    elif any(k in d for k in ["payment", "invoice", "amount", "due"]):
-        sender = "client"
-        recipient = "accounts team"
-        intent = "payment"
-        confidence = "high"
-
-    return {
-        "sender": sender,
-        "recipient": recipient,
-        "intent": intent,
-        "tone": "formal",
-        "length": "short",
-        "confidence": confidence
+    # Default safe controls (Phase 0 behaviour)
+    controls = {
+        "tone": "professional",
+        "length": "medium",
+        "recipient": "Recipient",
     }
 
+    # --- Phase 1: ML-based intent detection ---
+    try:
+        intent, confidence = predict_intent(description)
+
+        if confidence >= INTENT_CONFIDENCE_THRESHOLD:
+            if intent == "HR_EMAIL":
+                controls["recipient"] = "HR"
+            elif intent == "MANAGER_EMAIL":
+                controls["recipient"] = "Manager"
+            elif intent == "CLIENT_EMAIL":
+                controls["recipient"] = "Client"
+            elif intent == "COLLEGE_EMAIL":
+                controls["recipient"] = "College"
+            else:
+                controls["recipient"] = "Recipient"
+
+        # If confidence is low → do nothing (fallback)
+
+    except Exception:
+        # Any ML failure → fallback silently
+        pass
+
+    return controls
+    
 

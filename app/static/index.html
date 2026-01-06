@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #4f46e5; /* Indigo-600 */
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6; 
+            --card: #ffffff; 
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --highlight-bg: #fef3c7; 
+            --highlight-text: #92400e;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            max-width: 850px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            line-height: 1.5;
+        }
+        
+        .container { 
+            background: var(--card); 
+            padding: 40px; 
+            border-radius: 24px; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); 
+        }
+
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            font-weight: 800; 
+            color: #111827; 
+            letter-spacing: -0.025em; 
+            font-size: 2rem;
+        }
+
+        /* --- Input Styles --- */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        
+        .input-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+            color: var(--text-muted); 
+        }
+        
+        /* Updated to include SELECT for consistent styling */
+        input, textarea, select { 
+            width: 100%; 
+            padding: 14px; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 12px; 
+            font-size: 0.95rem; 
+            transition: all 0.2s; 
+            box-sizing: border-box; 
+            font-family: inherit;
+            background-color: #fff; /* Ensure white background for selects */
+            color: var(--text-main);
+        }
+        
+        input:focus, textarea:focus, select:focus { 
+            border-color: var(--primary); 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); 
+        }
+
+        /* Helper for dynamic hiding */
+        .hidden { display: none !important; }
+
+        .description-box { position: relative; margin-bottom: 30px; margin-top: 20px; }
+        textarea { height: 140px; resize: vertical; line-height: 1.6; }
+
+        /* --- Mic Button --- */
+        .mic-btn { 
+            position: absolute; bottom: 15px; right: 15px; 
+            width: 44px; height: 44px; 
+            border-radius: 50%; border: none; 
+            background: #ef4444; color: white; 
+            cursor: pointer; transition: all 0.2s; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+        }
+        .mic-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .mic-btn:hover { transform: scale(1.1); }
+        .mic-btn.recording { animation: pulse 1.5s infinite; background: #dc2626; }
+
+        /* --- Generate Button --- */
+        #generateBtn { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4); 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        #generateBtn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        #generateBtn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+        /* --- Email Preview Card --- */
+        #result { display: none; margin-top: 40px; animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        .email-preview { 
+            border: 1px solid #e5e7eb; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            background: white; 
+        }
+        
+        .email-header { 
+            background: #f9fafb; 
+            padding: 20px 24px; 
+            border-bottom: 1px solid #e5e7eb; 
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        
+        .email-meta-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+        }
+        
+        .meta-content { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
+        .meta-label { 
+            color: var(--text-muted); 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            width: 60px; 
+            flex-shrink: 0; 
+        }
+        .meta-value { 
+            font-weight: 500; 
+            color: #111827; 
+            font-size: 0.95rem;
+        }
+
+        /* --- Icons --- */
+        .icon-btn { 
+            background: white; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 6px; 
+            padding: 6px; 
+            cursor: pointer; 
+            color: var(--text-muted); 
+            transition: all 0.2s; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:hover { 
+            border-color: var(--primary); 
+            color: var(--primary); 
+            background: #eef2ff; 
+        }
+        .icon-btn svg { width: 16px; height: 16px; }
+
+        /* --- Body --- */
+        .email-body-container { position: relative; }
+        .email-body { 
+            padding: 32px 24px; 
+            color: #374151; 
+            font-size: 1rem; 
+            line-height: 1.75; 
+            white-space: pre-wrap; 
+        }
+
+        .placeholder-highlight {
+            font-weight: 700;
+            color: var(--highlight-text);
+            background-color: var(--highlight-bg);
+            padding: 0 4px;
+            border-radius: 4px;
+            border-bottom: 1px dashed var(--highlight-text);
+        }
+
+        .floating-copy {
+            position: absolute; top: 16px; right: 16px;
+            background: white; border: 1px solid #e5e7eb;
+            border-radius: 8px; padding: 6px 12px;
+            font-size: 0.8rem; font-weight: 600; color: var(--text-muted);
+            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s; opacity: 0.7;
+        }
+        .floating-copy:hover { opacity: 1; border-color: var(--primary); color: var(--primary); }
+
+        .action-bar { 
+            padding: 16px 24px; 
+            background: #f9fafb; 
+            border-top: 1px solid #e5e7eb; 
+            display: flex; justify-content: flex-end; 
+        }
+        
+        .btn-outline { 
+            padding: 10px 20px; 
+            background: white; 
+            border: 1px solid #d1d5db; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            color: #374151; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #f9fafb; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { text-align: center; margin-top: 20px; display: none; color: var(--text-muted); font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ AI Email Generator</h1>
+        
+        <div class="grid">
+            <div class="input-group">
+                <label>I am a...</label>
+                <select id="senderType" onchange="toggleFields()">
+                    <option value="professional">👔 Professional / Employee</option>
+                    <option value="student">🎓 Student</option>
+                    <option value="business">💼 Business Owner</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Tone</label>
+                <select id="userTone">
+                    <option value="professional">👔 Professional</option>
+                    <option value="urgent">🚨 Urgent</option>
+                    <option value="friendly">👋 Friendly</option>
+                    <option value="persuasive">💡 Persuasive</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="input-group">
+                <label>Your Name</label>
+                <input type="text" id="userName" placeholder="e.g. Utkarsh" value="Utkarsh">
+            </div>
+            <div class="input-group">
+                <label>Your Email (Optional)</label>
+                <input type="text" id="userEmail" placeholder="Appears in signature">
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="input-group dynamic-field" id="field-professional">
+                <label>Company Name</label>
+                <input type="text" id="userCompany" placeholder="e.g. Google">
+            </div>
+            <div class="input-group dynamic-field" id="field-title">
+                <label>Job Title (Optional)</label>
+                <input type="text" id="userTitle" placeholder="e.g. Senior Engineer">
+            </div>
+
+            <div class="input-group dynamic-field hidden" id="field-student">
+                <label>University / College</label>
+                <input type="text" id="userUniversity" placeholder="e.g. IIT Bombay">
+            </div>
+
+            <div class="input-group dynamic-field hidden" id="field-business">
+                <label>Business Name</label>
+                <input type="text" id="userBusiness" placeholder="e.g. Utkarsh Traders">
+            </div>
+        </div>
+
+        <div class="input-group description-box">
+            <label>What email do you need?</label>
+            <textarea id="descInput" placeholder="Ex: Ask Amazon for a refund for my headphones... (or click the mic)"></textarea>
+            
+            <button class="mic-btn" id="micBtn" title="Speak">
+                <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </button>
+        </div>
+
+        <button id="generateBtn">
+            <span>Generate Email</span> 🚀
+        </button>
+        <div class="loader" id="loader">Thinking... 🧠</div>
+
+        <div id="result">
+            <div class="email-preview">
+                <div class="email-header">
+                    <div class="email-meta-row">
+                        <div class="meta-content">
+                            <span class="meta-label">Subject</span>
+                            <span class="meta-value" id="resSubject"></span>
+                        </div>
+                        <button class="icon-btn" onclick="copyText('resSubject')" title="Copy Subject">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <div class="email-meta-row">
+                        <div class="meta-content">
+                            <span class="meta-label">To</span>
+                            <span class="meta-value" id="resGreeting"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="email-body-container">
+                    <button class="floating-copy" onclick="copyBodyText()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copy Body
+                    </button>
+                    <div class="email-body" id="fullEmailBody"></div>
+                </div>
+                
+                <div class="action-bar">
+                    <button class="btn-outline" onclick="copyFullEmail()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                        Copy Full Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const micBtn = document.getElementById('micBtn');
+        const descInput = document.getElementById('descInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const loader = document.getElementById('loader');
+        const resultDiv = document.getElementById('result');
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let rawBodyText = ""; 
+
+        // --- 1. Dynamic UI Logic ---
+        function toggleFields() {
+            const role = document.getElementById('senderType').value;
+            
+            // Hide specific fields
+            document.getElementById('field-professional').classList.add('hidden');
+            document.getElementById('field-title').classList.add('hidden');
+            document.getElementById('field-student').classList.add('hidden');
+            document.getElementById('field-business').classList.add('hidden');
+            
+            // Show relevant fields
+            if (role === 'professional') {
+                document.getElementById('field-professional').classList.remove('hidden');
+                document.getElementById('field-title').classList.remove('hidden');
+            } else if (role === 'student') {
+                document.getElementById('field-student').classList.remove('hidden');
+            } else if (role === 'business') {
+                document.getElementById('field-business').classList.remove('hidden');
+            }
+        }
+        
+        // Initialize on load
+        toggleFields();
+
+        // --- 2. Voice Logic ---
+        micBtn.addEventListener('click', async () => {
+            if (micBtn.classList.contains('recording')) {
+                mediaRecorder.stop();
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        micBtn.classList.remove('recording');
+                        const blob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const formData = new FormData();
+                        formData.append("file", blob, "voice.mp3");
+                        
+                        descInput.placeholder = "Transcribing...";
+                        const res = await fetch('/transcribe', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.text) {
+                            descInput.value = (descInput.value + " " + data.text).trim();
+                        }
+                        descInput.placeholder = "Ex: Ask Amazon for a refund...";
+                    };
+                    mediaRecorder.start();
+                    micBtn.classList.add('recording');
+                } catch (err) { alert("Mic access denied"); }
+            }
+        });
+
+        // --- 3. Generate Logic ---
+        generateBtn.addEventListener('click', async () => {
+            const desc = descInput.value;
+            if (!desc || desc.length < 5) return alert("Please describe the email first.");
+
+            loader.style.display = 'block';
+            resultDiv.style.display = 'none';
+            generateBtn.disabled = true;
+
+            const role = document.getElementById('senderType').value;
+
+            // Build dynamic payload
+            const payload = {
+                description: desc,
+                user_name: document.getElementById('userName').value,
+                user_email: document.getElementById('userEmail').value || null,
+                sender_type: role,
+                tone: document.getElementById('userTone').value,
+                
+                // Only send relevant fields
+                user_company: (role === 'professional') ? document.getElementById('userCompany').value : 
+                              (role === 'business') ? document.getElementById('userBusiness').value : null,
+                user_job_title: (role === 'professional') ? document.getElementById('userTitle').value : null,
+                user_university: (role === 'student') ? document.getElementById('userUniversity').value : null
+            };
+
+            try {
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail?.error?.message || "Error");
+
+                document.getElementById('resSubject').innerText = data.subject;
+                document.getElementById('resGreeting').innerText = data.greeting;
+                
+                const fullContent = `${data.greeting}\n\n${data.body}\n\n${data.closing}`;
+                rawBodyText = fullContent; 
+
+                // Highlight placeholders [like this]
+                let safeText = escapeHtml(fullContent);
+                safeText = safeText.replace(/\[(.*?)\]/g, '<span class="placeholder-highlight">[$1]</span>');
+                
+                document.getElementById('fullEmailBody').innerHTML = safeText;
+                
+                resultDiv.style.display = 'block';
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                loader.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        });
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // --- Copy Functions ---
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text);
+            showCheck(document.activeElement);
+        }
+
+        function copyBodyText() {
+            navigator.clipboard.writeText(rawBodyText);
+            showCheck(document.activeElement);
+        }
+
+        function copyFullEmail() {
+            const subject = document.getElementById('resSubject').innerText;
+            const fullText = `Subject: ${subject}\n\n${rawBodyText}`;
+            navigator.clipboard.writeText(fullText);
+            
+            const btn = document.activeElement;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = "✅ Copied!";
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 1500);
+        }
+
+        function showCheck(btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 1000);
+        }
+        // --- 4. Stale State Logic (UX Fix) ---
+        // If user changes ANY input, warn them that the current email is outdated
+        const allInputs = document.querySelectorAll('input, select, textarea');
+        
+        allInputs.forEach(input => {
+            input.addEventListener('input', markAsStale);
+            input.addEventListener('change', markAsStale);
+        });
+
+        function markAsStale() {
+            // Only run if we actually have a result showing
+            if (resultDiv.style.display === 'block') {
+                // 1. Fade out the result slightly
+                resultDiv.style.opacity = '0.5';
+                resultDiv.style.transition = 'opacity 0.3s';
+                
+                // 2. Change button text to urge action
+                generateBtn.innerHTML = "<span>Refresh Email</span> 🔄";
+                generateBtn.style.background = "#f59e0b"; // Amber color (Warning)
+            }
+        }
+
+        // Reset the style when we click generate
+        const originalGenerate = generateBtn.onclick; // Save old handler if needed
+        // Note: Our existing click listener handles the logic, 
+        // we just need to ensure styling resets INSIDE the existing click listener.
+    </script>
+</body>
+</html>
